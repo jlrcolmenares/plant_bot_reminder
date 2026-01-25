@@ -8,7 +8,7 @@ import time
 import logging
 import requests
 
-from config import TELEGRAM_API_URL, TELEGRAM_CHAT_ID
+from config import TELEGRAM_API_URL, TELEGRAM_CHAT_ID, TELEGRAM_TOKEN
 from utils import (
     get_current_season,
     load_plants_config,
@@ -144,6 +144,13 @@ def main() -> int:
     logger.info("=" * 50)
     logger.info("Iniciando bot de recordatorios de riego")
     logger.info("=" * 50)
+
+    # Debug: verificar que los secretos estan configurados
+    token_status = "configurado" if TELEGRAM_TOKEN else "NO CONFIGURADO"
+    chat_id_status = "configurado" if TELEGRAM_CHAT_ID else "NO CONFIGURADO"
+    logger.info(f"TELEGRAM_TOKEN: {token_status} (longitud: {len(TELEGRAM_TOKEN)})")
+    logger.info(f"TELEGRAM_CHAT_ID: {chat_id_status} (valor: {TELEGRAM_CHAT_ID})")
+    logger.info(f"API URL: {TELEGRAM_API_URL[:40]}...")
 
     try:
         success = check_plants_and_notify()
