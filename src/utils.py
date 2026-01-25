@@ -102,26 +102,20 @@ def get_watering_urgency(days: Optional[int], schedule: dict, season: str) -> st
 
     Returns:
         'overdue': Excede el maximo recomendado
-        'due': Esta en el rango optimo de riego
-        'soon': Se acerca al rango optimo
-        'ok': No necesita riego todavia
+        'due': Dias >= minimo recomendado (toca regar)
+        'ok': No necesita riego todavia / sin historial
     """
     if days is None:
-        return "due"  # Sin historial, mejor regar
+        return "ok"  # Sin historial, no enviar recordatorio
 
     season_schedule = schedule.get(season, {"min": 7, "max": 10})
     min_days = season_schedule["min"]
     max_days = season_schedule["max"]
 
-    # Calcular punto optimo (promedio del rango)
-    optimal = (min_days + max_days) // 2
-
     if days >= max_days:
         return "overdue"
-    elif days >= optimal:
+    elif days >= min_days:
         return "due"
-    elif days >= min_days - 1:
-        return "soon"
     else:
         return "ok"
 
