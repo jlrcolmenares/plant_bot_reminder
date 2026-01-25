@@ -7,18 +7,23 @@ import sys
 import time
 import logging
 import requests
+from datetime import datetime
 
-from config import TELEGRAM_API_URL, TELEGRAM_CHAT_ID, TELEGRAM_TOKEN
+from config import TELEGRAM_API_URL, TELEGRAM_CHAT_ID, TELEGRAM_TOKEN, DATA_DIR
 from utils import (
     get_current_season,
+    get_current_datetime,
     load_plants_config,
     load_watering_log,
+    save_watering_log,
     days_since_last_watering,
     get_watering_urgency,
     should_send_reminder,
     format_daily_summary,
     logger
 )
+
+LAST_UPDATE_FILE = DATA_DIR / "last_update_id.txt"
 
 
 def send_telegram_message(message: str, parse_mode: str = "Markdown") -> bool:
@@ -69,6 +74,143 @@ def send_telegram_message(message: str, parse_mode: str = "Markdown") -> bool:
             return False
 
     return False
+
+
+def get_last_update_id() -> int:
+    """Obtiene el ultimo update_id procesado."""
+    try:
+        if LAST_UPDATE_FILE.exists():
+            return int(LAST_UPDATE_FILE.read_text().strip())
+    except (ValueError, IOError):
+        pass
+    return 0
+
+
+def save_last_update_id(update_id: int) -> None:
+    """Guarda el ultimo update_id procesado."""
+    try:
+        LAST_UPDATE_FILE.write_text(str(update_id))
+    except IOError as e:
+        logger.error(f"Error guardando last_update_id: {e}")
+
+
+def get_telegram_updates(offset: int = 0) -> list:
+    """Obtiene los mensajes nuevos de Telegram."""
+    url = f"{TELEGRAM_API_URL}/getUpdates"
+    params = {"offset": offset, "timeout": 5}
+
+    try:
+        response = requests.get(url, params=params, timeout=10)
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("ok"):
+                return data.get("result", [])
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error obteniendo updates: {e}")
+
+    return []
+
+
+def process_watering_commands() -> list[str]:
+    """
+    Procesa comandos /regar de Telegram y actualiza el log.
+
+    Returns:
+        Lista de mensajes de confirmacion para enviar.
+    """
+    config = load_plants_config()
+    plants = {p["id"]: p for p in config.get("plants", [])}
+    plant_aliases = {}
+    for pid, pdata in plants.items():
+        plant_aliases[pid] = pid
+        plant_aliases[pid.lower()] = pid
+        # Alias cortos
+        if pid == "plectranthus":
+            plant_aliases["dinero"] = pid
+        if pid == "strelitzia":
+            plant_aliases["ave"] = pid
+            plant_aliases["paraiso"] = pid
+
+    last_update_id = get_last_update_id()
+    updates = get_telegram_updates(offset=last_update_id + 1 if last_update_id else 0)
+
+    if not updates:
+        logger.info("No hay mensajes nuevos de Telegram")
+        return []
+
+    watering_log = load_watering_log()
+    confirmations = []
+    new_last_update_id = last_update_id
+
+    for update in updates:
+        update_id = update.get("update_id", 0)
+        new_last_update_id = max(new_last_update_id, update_id)
+
+        message = update.get("message", {})
+        chat_id = str(message.get("chat", {}).get("id", ""))
+        text = message.get("text", "").strip()
+
+        # Solo procesar mensajes de nuestro chat
+        if chat_id != TELEGRAM_CHAT_ID:
+            continue
+
+        # Comando /regar <planta>
+        if text.lower().startswith("/regar"):
+            parts = text.split(maxsplit=1)
+            if len(parts) < 2:
+                confirmations.append("Uso: /regar <planta>\nPlantas: " + ", ".join(plants.keys()))
+                continue
+
+            plant_query = parts[1].strip().lower()
+            plant_id = plant_aliases.get(plant_query)
+
+            if not plant_id or plant_id not in plants:
+                confirmations.append(f"Planta '{parts[1]}' no encontrada.\nPlantas disponibles: {', '.join(plants.keys())}")
+                continue
+
+            # Registrar riego
+            today = get_current_datetime().strftime("%Y-%m-%d")
+            if plant_id not in watering_log:
+                watering_log[plant_id] = {"last_watered": None, "history": []}
+
+            watering_log[plant_id]["last_watered"] = today
+            if today not in watering_log[plant_id]["history"]:
+                watering_log[plant_id]["history"].insert(0, today)
+                # Mantener solo los ultimos 30 registros
+                watering_log[plant_id]["history"] = watering_log[plant_id]["history"][:30]
+
+            plant_name = plants[plant_id].get("name", plant_id)
+            plant_emoji = plants[plant_id].get("emoji", "🌱")
+            confirmations.append(f"{plant_emoji} *{plant_name}* regada!\nRegistrado: {today}")
+            logger.info(f"Riego registrado: {plant_id} - {today}")
+
+        # Comando /plantas - listar plantas
+        elif text.lower() == "/plantas":
+            plant_list = "\n".join([f"- `{pid}`: {p.get('emoji', '')} {p.get('name', '')}"
+                                    for pid, p in plants.items()])
+            confirmations.append(f"*Plantas disponibles:*\n{plant_list}")
+
+        # Comando /estado - estado actual
+        elif text.lower() == "/estado":
+            status_lines = []
+            for pid, pdata in plants.items():
+                days = days_since_last_watering(pid, watering_log)
+                emoji = pdata.get("emoji", "🌱")
+                name = pdata.get("name", pid)
+                if days is not None:
+                    status_lines.append(f"{emoji} {name}: {days} dias")
+                else:
+                    status_lines.append(f"{emoji} {name}: sin registro")
+            confirmations.append("*Estado de riego:*\n" + "\n".join(status_lines))
+
+    # Guardar cambios
+    if new_last_update_id > last_update_id:
+        save_last_update_id(new_last_update_id)
+
+    if watering_log:
+        save_watering_log(watering_log)
+
+    return confirmations
 
 
 def check_plants_and_notify() -> bool:
@@ -153,7 +295,17 @@ def main() -> int:
     logger.info(f"API URL: {TELEGRAM_API_URL[:40]}...")
 
     try:
+        # 1. Procesar comandos de riego pendientes
+        logger.info("Procesando comandos de Telegram...")
+        confirmations = process_watering_commands()
+
+        # 2. Enviar confirmaciones de riego
+        for msg in confirmations:
+            send_telegram_message(msg)
+
+        # 3. Enviar recordatorios
         success = check_plants_and_notify()
+
         if success:
             logger.info("Bot ejecutado correctamente")
             return 0

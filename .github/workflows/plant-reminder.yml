@@ -34,20 +34,20 @@ jobs:
         working-directory: src
         run: python plant_reminder.py
 
-      - name: Check for changes in watering log
+      - name: Check for changes in data
         id: check_changes
         run: |
-          if git diff --quiet data/watering_log.json; then
+          git add data/
+          if git diff --cached --quiet; then
             echo "changed=false" >> $GITHUB_OUTPUT
           else
             echo "changed=true" >> $GITHUB_OUTPUT
           fi
 
-      - name: Commit and push watering log
+      - name: Commit and push data changes
         if: steps.check_changes.outputs.changed == 'true'
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add data/watering_log.json
-          git commit -m "Update watering log [skip ci]"
+          git commit -m "Update watering data [skip ci]"
           git push
