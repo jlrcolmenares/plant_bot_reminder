@@ -1,0 +1,22 @@
+{
+  "strelitzia": {
+    "last_watered": null,
+    "history": []
+  },
+  "pothos": {
+    "last_watered": null,
+    "history": []
+  },
+  "calathea": {
+    "last_watered": null,
+    "history": []
+  },
+  "croton": {
+    "last_watered": null,
+    "history": []
+  },
+  "plectranthus": {
+    "last_watered": null,
+    "history": []
+  }
+}

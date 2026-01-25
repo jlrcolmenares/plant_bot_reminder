@@ -1,0 +1,59 @@
+{
+  "plants": [
+    {
+      "id": "strelitzia",
+      "name": "Strelitzia reginae (Ave del Paraiso)",
+      "emoji": "🦜",
+      "watering_schedule": {
+        "spring": {"min": 7, "max": 10},
+        "summer": {"min": 5, "max": 7},
+        "autumn": {"min": 10, "max": 14},
+        "winter": {"min": 14, "max": 21}
+      }
+    },
+    {
+      "id": "pothos",
+      "name": "Pothos",
+      "emoji": "🌿",
+      "watering_schedule": {
+        "spring": {"min": 7, "max": 10},
+        "summer": {"min": 5, "max": 7},
+        "autumn": {"min": 10, "max": 14},
+        "winter": {"min": 12, "max": 15}
+      }
+    },
+    {
+      "id": "calathea",
+      "name": "Calathea",
+      "emoji": "🌺",
+      "watering_schedule": {
+        "spring": {"min": 5, "max": 7},
+        "summer": {"min": 4, "max": 6},
+        "autumn": {"min": 7, "max": 10},
+        "winter": {"min": 10, "max": 12}
+      }
+    },
+    {
+      "id": "croton",
+      "name": "Croton",
+      "emoji": "🍂",
+      "watering_schedule": {
+        "spring": {"min": 6, "max": 8},
+        "summer": {"min": 5, "max": 7},
+        "autumn": {"min": 9, "max": 12},
+        "winter": {"min": 12, "max": 14}
+      }
+    },
+    {
+      "id": "plectranthus",
+      "name": "Plectranthus verticillatus (Planta del dinero)",
+      "emoji": "💰",
+      "watering_schedule": {
+        "spring": {"min": 3, "max": 4},
+        "summer": {"min": 2, "max": 3},
+        "autumn": {"min": 5, "max": 7},
+        "winter": {"min": 7, "max": 10}
+      }
+    }
+  ]
+}
