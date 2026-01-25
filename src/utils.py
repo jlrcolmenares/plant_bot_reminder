@@ -136,6 +136,14 @@ def get_random_motivational_message() -> str:
     return random.choice(MOTIVATIONAL_MESSAGES)
 
 
+SEASON_NAMES_ES = {
+    "spring": "Primavera",
+    "summer": "Verano",
+    "autumn": "Otono",
+    "winter": "Invierno"
+}
+
+
 def format_plant_message(
     plant: dict,
     days_since: Optional[int],
@@ -149,24 +157,17 @@ def format_plant_message(
     season_schedule = schedule.get(season, {"min": 7, "max": 10})
 
     urgency_msg = URGENCY_MESSAGES.get(urgency, "")
-    motivational = get_random_motivational_message()
 
     if days_since is not None:
         days_text = f"Dias desde ultimo riego: {days_since}"
     else:
         days_text = "Sin registro de riego previo"
 
-    message = f"""
-{emoji} *{name}*
-
+    message = f"""{emoji} *{name}*
 {urgency_msg}
-
 {days_text}
-Rango recomendado ({season}): cada {season_schedule['min']}-{season_schedule['max']} dias
-
-_{motivational}_
-"""
-    return message.strip()
+Riego recomendado: cada {season_schedule['min']}-{season_schedule['max']} dias"""
+    return message
 
 
 def format_daily_summary(plants_to_water: list[dict], season: str) -> str:
@@ -174,9 +175,11 @@ def format_daily_summary(plants_to_water: list[dict], season: str) -> str:
     if not plants_to_water:
         return "Hoy no hay plantas que necesiten riego. Buen dia!"
 
+    season_es = SEASON_NAMES_ES.get(season, season.capitalize())
+
     header = f"🌱 *RECORDATORIO DE RIEGO* 🌱\n"
     header += f"📅 {get_current_datetime().strftime('%d/%m/%Y')}\n"
-    header += f"🍃 Estacion: {season.capitalize()}\n"
+    header += f"🍃 Estacion: {season_es}\n"
     header += "─" * 20 + "\n\n"
 
     body = "\n\n".join([
@@ -189,4 +192,6 @@ def format_daily_summary(plants_to_water: list[dict], season: str) -> str:
         for p in plants_to_water
     ])
 
-    return header + body
+    footer = f"\n\n_{get_random_motivational_message()}_"
+
+    return header + body + footer
