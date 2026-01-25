@@ -8,8 +8,45 @@ Este bot revisa diariamente el estado de tus plantas y te envia recordatorios po
 
 - Detecta automaticamente la estacion del ano
 - Ajusta los intervalos de riego segun la temporada
-- Registra el historial de riegos
-- Envia mensajes personalizados con urgencia y motivacion
+- Permite registrar riegos via comandos de Telegram
+- Solo envia recordatorios cuando realmente toca regar
+
+## Uso Diario
+
+### Comandos de Telegram
+
+Envia estos comandos al bot `@mazarredo_plants_bot`:
+
+| Comando | Descripcion |
+|---------|-------------|
+| `/regar <planta>` | Registra que regaste una planta |
+| `/plantas` | Lista todas las plantas disponibles |
+| `/estado` | Muestra dias desde ultimo riego de cada planta |
+
+### Ejemplos de riego
+
+```
+/regar pothos
+/regar calathea
+/regar dinero      (alias para plectranthus)
+/regar ave         (alias para strelitzia)
+```
+
+### Plantas disponibles
+
+| ID | Alias | Nombre |
+|----|-------|--------|
+| `strelitzia` | `ave`, `paraiso` | Ave del Paraiso |
+| `pothos` | - | Pothos |
+| `calathea` | - | Calathea |
+| `croton` | - | Croton |
+| `plectranthus` | `dinero` | Planta del dinero |
+
+### Cuando llegan los recordatorios
+
+- El bot se ejecuta diariamente a las **8:00 AM** (hora Madrid)
+- Solo envia mensaje si alguna planta necesita riego (dias >= minimo recomendado)
+- Los comandos de riego se procesan en la siguiente ejecucion del bot
 
 ## Configuracion Inicial
 
@@ -26,15 +63,7 @@ Este bot revisa diariamente el estado de tus plantas y te envia recordatorios po
 
 **Alternativa:** Busca el bot `@userinfobot` en Telegram y te dira tu Chat ID.
 
-### 2. Crear el repositorio en GitHub
-
-1. Ve a [github.com/new](https://github.com/new)
-2. Nombre del repositorio: `plant-reminder-bot`
-3. Selecciona "Private" (recomendado)
-4. NO inicialices con README (ya tenemos uno)
-5. Haz clic en "Create repository"
-
-### 3. Configurar los Secretos en GitHub
+### 2. Configurar los Secretos en GitHub
 
 1. Ve a tu repositorio en GitHub
 2. Settings > Secrets and variables > Actions
@@ -43,22 +72,10 @@ Este bot revisa diariamente el estado de tus plantas y te envia recordatorios po
 
 | Nombre | Valor |
 |--------|-------|
-| `TELEGRAM_TOKEN` | El token de tu bot (ej: `8313249901:AAH3i1yduOslCbOvmxPzaxnS1uMQQMxhXto`) |
+| `TELEGRAM_TOKEN` | El token de tu bot |
 | `TELEGRAM_CHAT_ID` | Tu Chat ID de Telegram |
 
-### 4. Subir el codigo
-
-```bash
-cd plant-reminder-bot
-git init
-git add .
-git commit -m "Initial commit: Plant reminder bot"
-git branch -M main
-git remote add origin git@github.com:TU_USUARIO/plant-reminder-bot.git
-git push -u origin main
-```
-
-### 5. Verificar que funciona
+### 3. Verificar que funciona
 
 1. Ve a tu repositorio en GitHub
 2. Actions > Plant Watering Reminder
@@ -90,46 +107,65 @@ Edita el archivo `data/plants_config.json`:
 - `id`: Identificador unico (sin espacios ni caracteres especiales)
 - `name`: Nombre que aparecera en los mensajes
 - `emoji`: Emoji para identificar la planta
-- `watering_schedule`: Dias entre riegos para cada estacion
+- `watering_schedule`: Dias entre riegos para cada estacion (min = cuando enviar recordatorio, max = urgente)
 
-## Registrar un Riego Manual
+## Logica de Recordatorios
 
-Cuando riegues una planta, actualiza `data/watering_log.json`:
+El bot solo envia recordatorio cuando:
 
-```json
-{
-  "mi_planta": {
-    "last_watered": "2026-01-25",
-    "history": ["2026-01-25", "2026-01-15", "2026-01-05"]
-  }
-}
+1. La planta tiene historial de riego, **Y**
+2. Dias desde ultimo riego >= minimo recomendado para la estacion
+
+| Estado | Condicion | Mensaje |
+|--------|-----------|---------|
+| OK | dias < min | No envia mensaje |
+| Es momento | dias >= min | "Es momento de regar esta planta" |
+| URGENTE | dias >= max | "URGENTE! Esta planta necesita agua YA!" |
+
+## Estaciones del Ano
+
+El bot detecta automaticamente la estacion:
+
+| Estacion | Meses |
+|----------|-------|
+| Primavera | Marzo, Abril, Mayo |
+| Verano | Junio, Julio, Agosto |
+| Otono | Septiembre, Octubre, Noviembre |
+| Invierno | Diciembre, Enero, Febrero |
+
+## Ajustar el Horario
+
+Edita `.github/workflows/plant-reminder.yml`:
+
+```yaml
+on:
+  schedule:
+    - cron: '0 7 * * *'  # 7:00 UTC = 8:00 Madrid (invierno)
 ```
 
-Haz commit y push del cambio:
+Formato cron: `minuto hora dia mes dia_semana`
 
-```bash
-git add data/watering_log.json
-git commit -m "Watered mi_planta"
-git push
+## Estructura del Proyecto
+
+```
+plant-reminder-bot/
+├── .github/workflows/
+│   └── plant-reminder.yml    # GitHub Actions workflow
+├── src/
+│   ├── plant_reminder.py     # Script principal
+│   ├── config.py             # Configuracion
+│   └── utils.py              # Funciones auxiliares
+├── data/
+│   ├── plants_config.json    # Configuracion de plantas
+│   ├── watering_log.json     # Historial de riegos
+│   └── last_update_id.txt    # Control de mensajes procesados
+├── requirements.txt
+├── .gitignore
+├── CLAUDE.md                 # Contexto para Claude Code
+└── README.md
 ```
 
-## Sistema de Tracking
-
-El archivo `data/watering_log.json` almacena:
-
-- `last_watered`: Fecha del ultimo riego (formato: YYYY-MM-DD)
-- `history`: Historial de todos los riegos
-
-El bot calcula automaticamente los dias desde el ultimo riego y compara con el rango recomendado para la estacion actual.
-
-### Logica de urgencia:
-
-- **URGENTE**: Excede el maximo de dias recomendado
-- **Es momento**: Esta en el rango optimo (promedio del rango)
-- **Pronto**: Se acerca al rango recomendado
-- **OK**: No necesita riego todavia
-
-## Testejar Localmente
+## Testear Localmente
 
 1. Crea un archivo `.env` (NO lo commitees):
    ```
@@ -148,68 +184,20 @@ El bot calcula automaticamente los dias desde el ultimo riego y compara con el r
    export $(cat ../.env | xargs) && python plant_reminder.py
    ```
 
-## Ajustar el Horario
-
-Edita `.github/workflows/plant-reminder.yml`:
-
-```yaml
-on:
-  schedule:
-    - cron: '0 7 * * *'  # 7:00 UTC = 8:00 Madrid (invierno)
-```
-
-Formato cron: `minuto hora dia mes dia_semana`
-
-Ejemplos:
-- `'0 6 * * *'` - 7:00 AM Madrid (invierno)
-- `'30 7 * * *'` - 8:30 AM Madrid (invierno)
-- `'0 7 * * 1-5'` - Solo dias laborables
-
-## Estaciones del Ano
-
-El bot detecta automaticamente la estacion:
-
-| Estacion | Meses |
-|----------|-------|
-| Primavera | Marzo, Abril, Mayo |
-| Verano | Junio, Julio, Agosto |
-| Otono | Septiembre, Octubre, Noviembre |
-| Invierno | Diciembre, Enero, Febrero |
-
-## Estructura del Proyecto
-
-```
-plant-reminder-bot/
-├── .github/workflows/
-│   └── plant-reminder.yml    # GitHub Actions workflow
-├── src/
-│   ├── plant_reminder.py     # Script principal
-│   ├── config.py             # Configuracion
-│   └── utils.py              # Funciones auxiliares
-├── data/
-│   ├── plants_config.json    # Configuracion de plantas
-│   └── watering_log.json     # Historial de riegos
-├── requirements.txt          # Dependencias Python
-├── .gitignore
-└── README.md
-```
-
 ## Troubleshooting
 
 ### El bot no envia mensajes
-1. Verifica que los secretos esten bien configurados en GitHub
+1. Verifica que los secretos esten bien configurados en GitHub (sin espacios extra)
 2. Asegurate de haber enviado al menos un mensaje al bot primero
 3. Revisa los logs en GitHub Actions
 
-### Error de permisos en GitHub Actions
-Asegurate de que el workflow tenga permisos de escritura:
-```yaml
-permissions:
-  contents: write
-```
+### Los comandos /regar no funcionan
+1. Asegurate de usar el ID correcto de la planta (ver `/plantas`)
+2. Ejecuta el workflow manualmente para procesar comandos pendientes
+3. Los comandos se procesan en la siguiente ejecucion, no en tiempo real
 
-### Las plantas no aparecen
-Verifica que `data/plants_config.json` tenga el formato JSON correcto.
+### Error 404 en Telegram
+El token o chat_id tienen espacios o caracteres incorrectos. Verifica los secretos en GitHub.
 
 ## Licencia
 
