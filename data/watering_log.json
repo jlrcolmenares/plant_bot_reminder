@@ -4,8 +4,10 @@
     "history": []
   },
   "pothos": {
-    "last_watered": null,
-    "history": []
+    "last_watered": "2026-01-28",
+    "history": [
+      "2026-01-28"
+    ]
   },
   "calathea": {
     "last_watered": null,
