@@ -132,7 +132,13 @@ def process_watering_commands() -> list[str]:
             plant_aliases["paraiso"] = pid
 
     last_update_id = get_last_update_id()
-    updates = get_telegram_updates(offset=last_update_id + 1 if last_update_id else 0)
+    logger.info(f"Ultimo update_id procesado: {last_update_id}")
+
+    offset = last_update_id + 1 if last_update_id else 0
+    logger.info(f"Buscando updates con offset: {offset}")
+
+    updates = get_telegram_updates(offset=offset)
+    logger.info(f"Updates recibidos: {len(updates)}")
 
     if not updates:
         logger.info("No hay mensajes nuevos de Telegram")
@@ -150,8 +156,11 @@ def process_watering_commands() -> list[str]:
         chat_id = str(message.get("chat", {}).get("id", ""))
         text = message.get("text", "").strip()
 
+        logger.info(f"Update {update_id}: chat_id={chat_id}, text='{text[:50]}'")
+
         # Solo procesar mensajes de nuestro chat
         if chat_id != TELEGRAM_CHAT_ID:
+            logger.info(f"Ignorando mensaje de chat_id {chat_id} (esperado: {TELEGRAM_CHAT_ID})")
             continue
 
         # Comando /regar <planta>
