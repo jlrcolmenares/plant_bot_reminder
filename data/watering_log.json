@@ -1,7 +1,9 @@
 {
   "strelitzia": {
-    "last_watered": null,
-    "history": []
+    "last_watered": "2026-02-08",
+    "history": [
+      "2026-02-08"
+    ]
   },
   "pothos": {
     "last_watered": "2026-01-28",
@@ -14,8 +16,10 @@
     "history": []
   },
   "croton": {
-    "last_watered": null,
-    "history": []
+    "last_watered": "2026-02-08",
+    "history": [
+      "2026-02-08"
+    ]
   },
   "plectranthus": {
     "last_watered": null,
