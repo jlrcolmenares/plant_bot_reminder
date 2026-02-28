@@ -124,12 +124,10 @@ def process_watering_commands() -> list[str]:
     for pid, pdata in plants.items():
         plant_aliases[pid] = pid
         plant_aliases[pid.lower()] = pid
-        # Alias cortos
-        if pid == "plectranthus":
-            plant_aliases["dinero"] = pid
-        if pid == "strelitzia":
-            plant_aliases["ave"] = pid
-            plant_aliases["paraiso"] = pid
+    
+    # Alias simplificados
+    plant_aliases["dinero"] = "plectranthus"
+    plant_aliases["paraiso"] = "strelitzia"
 
     last_update_id = get_last_update_id()
     logger.info(f"Ultimo update_id procesado: {last_update_id}")
@@ -195,9 +193,20 @@ def process_watering_commands() -> list[str]:
 
         # Comando /plantas - listar plantas
         elif text.lower() == "/plantas":
-            plant_list = "\n".join([f"- `{pid}`: {p.get('emoji', '')} {p.get('name', '')}"
-                                    for pid, p in plants.items()])
-            confirmations.append(f"*Plantas disponibles:*\n{plant_list}")
+            plant_list = []
+            alias_map = {
+                "plectranthus": "dinero",
+                "strelitzia": "paraiso"
+            }
+            for pid, p in plants.items():
+                emoji = p.get('emoji', '🌱')
+                name = p.get('name', pid)
+                alias = alias_map.get(pid)
+                if alias:
+                    plant_list.append(f"• {emoji} *{name}* → `/regar {alias}`")
+                else:
+                    plant_list.append(f"• {emoji} *{name}* → `/regar {pid}`")
+            confirmations.append("🌱 *Tus Plantas:*\n\n" + "\n".join(plant_list))
 
         # Comando /estado - estado actual
         elif text.lower() == "/estado":
@@ -211,6 +220,23 @@ def process_watering_commands() -> list[str]:
                 else:
                     status_lines.append(f"{emoji} {name}: sin registro")
             confirmations.append("*Estado de riego:*\n" + "\n".join(status_lines))
+
+        # Comando /ayuda - ayuda
+        elif text.lower() == "/ayuda" or text.lower() == "/help":
+            help_text = """🌱 *COMANDOS DISPONIBLES* 🌱
+
+/regar <planta> - Registrar que regaste una planta
+/plantas - Ver todas tus plantas
+/estado - Ver días desde el último riego
+/ayuda - Ver esta ayuda
+
+*Ejemplos de riego:*
+• /regar dinero
+• /regar paraiso
+• /regar pothos
+• /regar calathea
+• /regar croton"""
+            confirmations.append(help_text)
 
     # Guardar cambios
     if new_last_update_id > last_update_id:

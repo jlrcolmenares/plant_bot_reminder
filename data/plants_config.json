@@ -2,7 +2,7 @@
   "plants": [
     {
       "id": "strelitzia",
-      "name": "Strelitzia reginae (Ave del Paraiso)",
+      "name": "Ave del Paraíso",
       "emoji": "🦜",
       "watering_schedule": {
         "spring": {"min": 7, "max": 10},
@@ -46,7 +46,7 @@
     },
     {
       "id": "plectranthus",
-      "name": "Plectranthus verticillatus (Planta del dinero)",
+      "name": "Planta del Dinero",
       "emoji": "💰",
       "watering_schedule": {
         "spring": {"min": 3, "max": 4},
