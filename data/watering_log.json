@@ -1,34 +1,39 @@
 {
   "strelitzia": {
-    "last_watered": "2026-02-08",
+    "last_watered": "2026-03-01",
     "history": [
+      "2026-03-01",
       "2026-02-08"
     ]
   },
   "pothos": {
-    "last_watered": "2026-02-26",
+    "last_watered": "2026-03-01",
     "history": [
+      "2026-03-01",
       "2026-02-26",
       "2026-02-14",
       "2026-01-28"
     ]
   },
   "calathea": {
-    "last_watered": "2026-02-26",
+    "last_watered": "2026-03-01",
     "history": [
+      "2026-03-01",
       "2026-02-26"
     ]
   },
   "croton": {
-    "last_watered": "2026-02-26",
+    "last_watered": "2026-03-01",
     "history": [
+      "2026-03-01",
       "2026-02-26",
       "2026-02-08"
     ]
   },
   "plectranthus": {
-    "last_watered": "2026-02-26",
+    "last_watered": "2026-03-01",
     "history": [
+      "2026-03-01",
       "2026-02-26"
     ]
   }
